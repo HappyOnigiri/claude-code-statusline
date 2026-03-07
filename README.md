@@ -1,6 +1,8 @@
-# claude-statusline
+# claude-code-statusline
 
-Claude Code のステータスライン用スクリプト集です。
+Claude Code のステータスライン用スクリプトです。
+
+![demo](demo.png)
 
 ## スクリプト
 
