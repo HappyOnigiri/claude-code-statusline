@@ -15,6 +15,10 @@ if [ -z "$PYTHON_CMD" ]; then
   printf 'statusline-command.sh: python3 or python not found\n' >&2
   exit 1
 fi
+if ! "$PYTHON_CMD" -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 7) else 1)" 2>/dev/null; then
+  printf 'statusline-command.sh: Python 3.7+ is required\n' >&2
+  exit 1
+fi
 
 input=$(cat)
 cwd_real=$(echo "$input" | jq -r '.workspace.current_dir // .cwd')
@@ -116,11 +120,11 @@ else
 
     if [ $curl_exit -eq 28 ]; then
       api_error="timeout"
-      CACHE_FILE_PY="$CACHE_FILE_PY" "$PYTHON_CMD" -c "import json,time,os; json.dump({'_ts': int(time.time()), 'api_error': 'timeout'}, open(os.environ['CACHE_FILE_PY'], 'w'))" 2>/dev/null
+      CACHE_FILE_PY="$CACHE_FILE_PY" "$PYTHON_CMD" -c "import json,time,os,tempfile; _p=os.environ['CACHE_FILE_PY']; _d={'_ts':int(time.time()),'api_error':'timeout'}; _fd,_t=tempfile.mkstemp(dir=os.path.dirname(_p) or '.',prefix='.claude-usage-',suffix='.tmp'); os.write(_fd,json.dumps(_d).encode()); os.close(_fd); os.replace(_t,_p)" 2>/dev/null
       printf '%s [curl_exit=%d] error:timeout\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$curl_exit" >> "$LOG_FILE" 2>/dev/null
     elif [ $curl_exit -ne 0 ]; then
       api_error="unknown"
-      CACHE_FILE_PY="$CACHE_FILE_PY" "$PYTHON_CMD" -c "import json,time,os; json.dump({'_ts': int(time.time()), 'api_error': 'unknown'}, open(os.environ['CACHE_FILE_PY'], 'w'))" 2>/dev/null
+      CACHE_FILE_PY="$CACHE_FILE_PY" "$PYTHON_CMD" -c "import json,time,os,tempfile; _p=os.environ['CACHE_FILE_PY']; _d={'_ts':int(time.time()),'api_error':'unknown'}; _fd,_t=tempfile.mkstemp(dir=os.path.dirname(_p) or '.',prefix='.claude-usage-',suffix='.tmp'); os.write(_fd,json.dumps(_d).encode()); os.close(_fd); os.replace(_t,_p)" 2>/dev/null
       printf '%s [curl_exit=%d] error:unknown\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$curl_exit" >> "$LOG_FILE" 2>/dev/null
     else
       parsed=$(API_RESP="$api_resp" "$PYTHON_CMD" - <<'PYEOF' 2>/dev/null
@@ -160,7 +164,7 @@ PYEOF
 
       if [[ "$parsed" == error:* ]]; then
         api_error="${parsed#error:}"
-        API_ERROR="$api_error" CACHE_FILE_PY="$CACHE_FILE_PY" "$PYTHON_CMD" -c "import json,time,os; json.dump({'_ts': int(time.time()), 'api_error': os.environ['API_ERROR']}, open(os.environ['CACHE_FILE_PY'], 'w'))" 2>/dev/null
+        API_ERROR="$api_error" CACHE_FILE_PY="$CACHE_FILE_PY" "$PYTHON_CMD" -c "import json,time,os,tempfile; _p=os.environ['CACHE_FILE_PY']; _d={'_ts':int(time.time()),'api_error':os.environ['API_ERROR']}; _fd,_t=tempfile.mkstemp(dir=os.path.dirname(_p) or '.',prefix='.claude-usage-',suffix='.tmp'); os.write(_fd,json.dumps(_d).encode()); os.close(_fd); os.replace(_t,_p)" 2>/dev/null
         printf '%s [curl_exit=%d] %s resp=%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$curl_exit" "$parsed" "$api_resp" >> "$LOG_FILE" 2>/dev/null
       elif [ -n "$parsed" ]; then
         IFS='|' read -r five_pct seven_pct five_resets_at seven_resets_at <<< "$parsed"
@@ -168,7 +172,7 @@ PYEOF
         FIVE_PCT="$five_pct" SEVEN_PCT="$seven_pct" \
         FIVE_RESETS_AT="$five_resets_at" SEVEN_RESETS_AT="$seven_resets_at" \
         CACHE_FILE_PY="$CACHE_FILE_PY" "$PYTHON_CMD" - <<'PYEOF' 2>/dev/null
-import json, time, os
+import json, time, os, tempfile
 d = {
   '_ts': int(time.time()),
   'five_hour_pct': int(os.environ['FIVE_PCT']),
@@ -176,12 +180,15 @@ d = {
   'five_resets_at': os.environ['FIVE_RESETS_AT'],
   'seven_resets_at': os.environ['SEVEN_RESETS_AT']
 }
-with open(os.environ['CACHE_FILE_PY'], 'w') as f:
+_p = os.environ['CACHE_FILE_PY']
+_fd, _tmp = tempfile.mkstemp(dir=os.path.dirname(_p) or '.', prefix='.claude-usage-', suffix='.tmp')
+with os.fdopen(_fd, 'w') as f:
     json.dump(d, f)
+os.replace(_tmp, _p)
 PYEOF
       else
         api_error="unknown"
-        CACHE_FILE_PY="$CACHE_FILE_PY" "$PYTHON_CMD" -c "import json,time,os; json.dump({'_ts': int(time.time()), 'api_error': 'unknown'}, open(os.environ['CACHE_FILE_PY'], 'w'))" 2>/dev/null
+        CACHE_FILE_PY="$CACHE_FILE_PY" "$PYTHON_CMD" -c "import json,time,os,tempfile; _p=os.environ['CACHE_FILE_PY']; _d={'_ts':int(time.time()),'api_error':'unknown'}; _fd,_t=tempfile.mkstemp(dir=os.path.dirname(_p) or '.',prefix='.claude-usage-',suffix='.tmp'); os.write(_fd,json.dumps(_d).encode()); os.close(_fd); os.replace(_t,_p)" 2>/dev/null
         printf '%s [curl_exit=%d] error:unknown (empty parsed) resp=%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$curl_exit" "$api_resp" >> "$LOG_FILE" 2>/dev/null
       fi
     fi
