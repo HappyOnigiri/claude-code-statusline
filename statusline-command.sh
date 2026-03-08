@@ -1,4 +1,16 @@
 #!/bin/bash
+
+# ── Configuration ────────────────────────────────────────────────
+CACHE_TTL=360                        # キャッシュ有効期間（秒）
+CURL_TIMEOUT=5                       # curl タイムアウト（秒）
+USAGE_WARN_PCT=80                    # 利用量警告しきい値（%）
+USAGE_CRIT_PCT=95                    # 利用量危険しきい値（%）
+USAGE_API_URL="https://api.anthropic.com/api/oauth/usage"
+USAGE_API_USER_AGENT="ClaudeDesktop/2.0.5"
+USAGE_API_VERSION="2023-06-01"
+USAGE_API_BETA="oauth-2025-04-20"
+# ────────────────────────────────────────────────────────────────
+
 input=$(cat)
 cwd_real=$(echo "$input" | jq -r '.workspace.current_dir // .cwd')
 cwd="${cwd_real/#$HOME/\~}"
@@ -40,16 +52,16 @@ model_color() {
 # Color based on utilization %
 usage_color() {
   local pct=$1
-  if [ "$pct" -ge 95 ]; then
+  if [ "$pct" -ge "$USAGE_CRIT_PCT" ]; then
     printf '%s' "$RED"
-  elif [ "$pct" -ge 80 ]; then
+  elif [ "$pct" -ge "$USAGE_WARN_PCT" ]; then
     printf '%s' "$YELLOW"
   else
     printf '%s' "$GREEN"
   fi
 }
 
-# Fetch usage from Anthropic API with cache (360s)
+# Fetch usage from Anthropic API with cache
 CACHE_DIR="${HOME}/.claude/cache"
 mkdir -p "$CACHE_DIR" 2>/dev/null
 CACHE_FILE="${CACHE_DIR}/claude-usage-cache.json"
@@ -63,7 +75,6 @@ else
   CACHE_FILE_PY="$CACHE_FILE"
   LOG_FILE_PY="$LOG_FILE"
 fi
-CACHE_TTL=360
 now=$(date +%s)
 
 # Check if cache dir is writable; skip API entirely if not
@@ -101,11 +112,11 @@ elif [ "$cache_writable" = true ]; then
   fi
 
   if [ -n "$TOKEN" ]; then
-    api_resp=$(curl -s --max-time 5 "https://api.anthropic.com/api/oauth/usage" \
+    api_resp=$(curl -s --max-time "$CURL_TIMEOUT" "$USAGE_API_URL" \
       -H "Authorization: Bearer $TOKEN" \
-      -H "User-Agent: ClaudeDesktop/2.0.5" \
-      -H "anthropic-version: 2023-06-01" \
-      -H "anthropic-beta: oauth-2025-04-20" 2>/dev/null)
+      -H "User-Agent: $USAGE_API_USER_AGENT" \
+      -H "anthropic-version: $USAGE_API_VERSION" \
+      -H "anthropic-beta: $USAGE_API_BETA" 2>/dev/null)
     curl_exit=$?
 
     if [ $curl_exit -eq 28 ]; then
