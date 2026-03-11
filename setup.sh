@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-SCRIPT_URL="https://raw.githubusercontent.com/HappyOnigiri/claude-code-statusline/main/statusline-command.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/HappyOnigiri/ClaudeCodeStatusline/main/statusline-command.sh"
 CLAUDE_DIR="$HOME/.claude"
 DEST_SCRIPT="$CLAUDE_DIR/statusline-command.sh"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
