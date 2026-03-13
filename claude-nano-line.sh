@@ -12,11 +12,11 @@ USAGE_API_BETA="oauth-2025-04-20"
 # ────────────────────────────────────────────────────────────────
 PYTHON_CMD="$(command -v python3 || command -v python)"
 if [ -z "$PYTHON_CMD" ]; then
-  printf 'statusline-command.sh: python3 or python not found\n' >&2
+  printf 'claude-nano-line.sh: python3 or python not found\n' >&2
   exit 1
 fi
 if ! "$PYTHON_CMD" -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 7) else 1)" 2>/dev/null; then
-  printf 'statusline-command.sh: Python 3.7+ is required\n' >&2
+  printf 'claude-nano-line.sh: Python 3.7+ is required\n' >&2
   exit 1
 fi
 

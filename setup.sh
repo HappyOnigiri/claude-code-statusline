@@ -1,15 +1,15 @@
 #!/bin/bash
 set -e
 
-SCRIPT_URL="https://raw.githubusercontent.com/HappyOnigiri/ClaudeCodeStatusline/main/statusline-command.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/HappyOnigiri/ClaudeNanoLine/main/claude-nano-line.sh"
 CLAUDE_DIR="$HOME/.claude"
-DEST_SCRIPT="$CLAUDE_DIR/statusline-command.sh"
+DEST_SCRIPT="$CLAUDE_DIR/claude-nano-line.sh"
 SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 
 STATUS_LINE_ENTRY='{
   "statusLine": {
     "type": "command",
-    "command": "bash ~/.claude/statusline-command.sh"
+    "command": "bash ~/.claude/claude-nano-line.sh"
   }
 }'
 
@@ -23,8 +23,8 @@ fi
 # Ensure ~/.claude/ exists
 mkdir -p "$CLAUDE_DIR"
 
-# Download statusline-command.sh
-echo "Downloading statusline-command.sh..."
+# Download claude-nano-line.sh
+echo "Downloading claude-nano-line.sh..."
 curl -fsSL "$SCRIPT_URL" -o "$DEST_SCRIPT"
 chmod +x "$DEST_SCRIPT"
 echo "Saved to $DEST_SCRIPT"
