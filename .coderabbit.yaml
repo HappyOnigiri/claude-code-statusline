@@ -23,3 +23,6 @@ reviews:
       - "WIP"
       - "DO NOT MERGE"
       - "DRAFT"
+    # Release Please が生成する PR をレビュー対象外にする
+    labels:
+    - "!autorelease: pending"
